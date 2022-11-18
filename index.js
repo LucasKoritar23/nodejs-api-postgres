@@ -1,7 +1,11 @@
 const express = require("express");
+const cors = require("cors");
 const bodyParser = require("body-parser");
+const strftime = require("strftime");
 const app = express();
 const port = 3000;
+
+app.use(cors());
 
 const Pool = require("pg").Pool;
 const pool = new Pool({
@@ -54,8 +58,36 @@ app.get("/events", (request, response) => {
 // POST Events
 app.post("/events", (request, response) => {
   const { message_text, send_date } = request.body;
+
+  if (message_text == "" || message_text == null) {
+    return response
+      .status(400)
+      .json({ error: "Message field cannot be null or empty" });
+  }
+
+  if (send_date == "" || send_date == null) {
+    return response
+      .status(400)
+      .json({ error: "sendDate field cannot be null or empty" });
+  }
+
+  const currtendDate = strftime("%Y-%m-%d");
+  const currentDateString = Date.parse(currtendDate);
+  const sendDateString = Date.parse(send_date);
+
+  if (isNaN(sendDateString)) {
+    return response.status(400).json({
+      error: "The value informed in the sendDate field is invalid",
+    });
+  }
+
+  if (sendDateString < currentDateString) {
+    return response.status(400).json({
+      error: "The sendDate must be greater than or equal to the current date",
+    });
+  }
+
   const created_on = new Date();
-  //remove after
   const update_at = null;
   pool.query(
     "INSERT INTO message_events (message_text, send_date, created_on, update_at) VALUES ($1, $2, $3, $4) RETURNING *",
@@ -73,6 +105,34 @@ app.post("/events", (request, response) => {
 app.put("/events/:id", (request, response) => {
   const id = parseInt(request.params.id);
   const { message_text, send_date } = request.body;
+
+  if (message_text == "" || message_text == null) {
+    return response
+      .status(400)
+      .json({ error: "Message field cannot be null or empty" });
+  }
+
+  if (send_date == "" || send_date == null) {
+    return response
+      .status(400)
+      .json({ error: "sendDate field cannot be null or empty" });
+  }
+
+  const currtendDate = strftime("%Y-%m-%d");
+  const currentDateString = Date.parse(currtendDate);
+  const sendDateString = Date.parse(send_date);
+
+  if (isNaN(sendDateString)) {
+    return response.status(400).json({
+      error: "The value informed in the sendDate field is invalid",
+    });
+  }
+
+  if (sendDateString < currentDateString) {
+    return response.status(400).json({
+      error: "The sendDate must be greater than or equal to the current date",
+    });
+  }
 
   const update_at = new Date();
   pool.query(

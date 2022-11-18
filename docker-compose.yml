@@ -1,5 +1,11 @@
 version: '3.7'
 services:
+  api:
+    build: .
+    image: voce-sabia-api-v1
+    ports:
+      - "3000:3000"
+      
   postgres:
     image: postgres:latest
     environment:

@@ -16,6 +16,23 @@ const pool = new Pool({
   port: 5432,
 });
 
+function getInfosMessage(id) {
+  return new Promise((resolve, reject) => {
+    pool.query(
+      "SELECT * FROM message_events WHERE id = $1",
+      [id],
+      (error, results) => {
+        if (error) {
+          throw error;
+          reject(0);
+        } else {
+          resolve(results.rows);
+        }
+      }
+    );
+  });
+}
+
 app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({
@@ -34,6 +51,20 @@ app.get("/events/:id", (request, response) => {
   pool.query(
     "SELECT * FROM message_events WHERE id = $1",
     [id],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).json(results.rows);
+    }
+  );
+});
+
+app.get("/events/date/:send_date", (request, response) => {
+  const send_date = request.params.send_date;
+  pool.query(
+    "SELECT * FROM message_events WHERE send_date = $1",
+    [send_date],
     (error, results) => {
       if (error) {
         throw error;
@@ -150,6 +181,33 @@ app.put("/events/:id", (request, response) => {
 // DELETE Events
 app.delete("/events/:id", (request, response) => {
   const id = parseInt(request.params.id);
+  pool.query(
+    "DELETE FROM message_events WHERE id = $1",
+    [id],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).send(results.rows[0]);
+    }
+  );
+});
+
+app.post("/events/history/:id", (request, response) => {
+  const id = parseInt(request.params.id);
+  getInfosMessage(id).then(() => {
+    const currentDate = new Date();
+    pool.query(
+      "INSERT INTO message_events_history (id_table_message, sended, replication_date) VALUES ($1, $2, $3) RETURNING *",
+      [id, true, currentDate],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+      }
+    );
+  });
+
   pool.query(
     "DELETE FROM message_events WHERE id = $1",
     [id],
